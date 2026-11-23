@@ -45,6 +45,23 @@ describe("backend authentication proxy", () => {
     )
   })
 
+  it("accepts the public same-origin host forwarded by the deployment proxy", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ message: "ok" })))
+    const request = new NextRequest("http://internal-host/api/backend/api/v1/history/stats", {
+      method: "POST",
+      headers: {
+        origin: "https://qr-studio.vercel.app",
+        "x-forwarded-host": "qr-studio.vercel.app",
+        "x-forwarded-proto": "https",
+      },
+    })
+
+    const response = await POST(request, { params: Promise.resolve({ path: ["api", "v1", "history", "stats"] }) })
+
+    expect(response.status).toBe(200)
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   it("rejects cross-origin state-changing requests", async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
