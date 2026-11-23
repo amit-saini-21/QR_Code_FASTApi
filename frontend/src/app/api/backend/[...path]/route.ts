@@ -56,13 +56,20 @@ async function proxy(request: NextRequest, context: RouteContext) {
   }
 
   const origin = request.headers.get("origin")
-  if (method !== "GET" && origin) {
-    try {
-      if (new URL(origin).origin !== requestOrigin(request)) {
-        return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+  const fetchSite = request.headers.get("sec-fetch-site")
+  if (method !== "GET") {
+    if (fetchSite && fetchSite !== "same-origin") {
+      return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+    }
+
+    if (origin && !fetchSite) {
+      try {
+        if (new URL(origin).origin !== requestOrigin(request)) {
+          return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+        }
+      } catch {
+        return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 })
       }
-    } catch {
-      return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 })
     }
   }
 

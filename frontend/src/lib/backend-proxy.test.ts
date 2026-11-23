@@ -45,14 +45,13 @@ describe("backend authentication proxy", () => {
     )
   })
 
-  it("accepts the public same-origin host forwarded by the deployment proxy", async () => {
+  it("accepts browser-verified same-origin requests through an internal proxy host", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ message: "ok" })))
     const request = new NextRequest("http://internal-host/api/backend/api/v1/history/stats", {
       method: "POST",
       headers: {
         origin: "https://qr-studio.vercel.app",
-        "x-forwarded-host": "qr-studio.vercel.app",
-        "x-forwarded-proto": "https",
+        "sec-fetch-site": "same-origin",
       },
     })
 
@@ -67,7 +66,10 @@ describe("backend authentication proxy", () => {
     vi.stubGlobal("fetch", fetchMock)
     const request = new NextRequest("http://localhost/api/backend/api/v1/auth/logout", {
       method: "POST",
-      headers: { origin: "https://untrusted.example" },
+      headers: {
+        origin: "https://untrusted.example",
+        "sec-fetch-site": "cross-site",
+      },
     })
 
     const response = await POST(request, { params: Promise.resolve({ path: ["api", "v1", "auth", "logout"] }) })
