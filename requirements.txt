@@ -1,0 +1,12 @@
+fastapi>=0.115
+uvicorn>=0.30
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+PyJWT>=2.8
+Werkzeug>=3.0
+email-validator>=2.0
+Pillow>=10.0
+qrcode>=8.0
+supabase>=2.0
+python-multipart>=0.0.9

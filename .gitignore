@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Databases and local artifacts
+*.db
+*.sqlite
+*.sqlite3
+qrs/
+uploads/
+media/
+
+# IDE and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and reports
+*.log
+coverage/
+htmlcov/
+
+# Node.js frontend, if added later
+node_modules/
+dist/
+build/
+.next/
+out/
