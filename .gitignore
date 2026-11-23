@@ -39,3 +39,9 @@ dist/
 build/
 .next/
 out/
+
+*/supabase_security.sql
+
+API_CONTRACT.md
+
+FRONTEND_PROMPT.md
