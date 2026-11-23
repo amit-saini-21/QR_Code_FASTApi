@@ -9,7 +9,7 @@ type RouteContext = {
 }
 
 function backendUrl(path: string, search: string) {
-  const base = (process.env.BACKEND_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "")
+  const base = (process.env.BACKEND_API_URL || "https://qr-code-fastapi.onrender.com").replace(/\/$/, "")
   return `${base}/${path}${search}`
 }
 

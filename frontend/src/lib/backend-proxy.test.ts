@@ -30,6 +30,21 @@ describe("backend authentication proxy", () => {
     )
   })
 
+  it("uses the Render backend URL when no override is configured", async () => {
+    vi.stubEnv("BACKEND_API_URL", "")
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ message: "ok" })))
+    const request = new NextRequest("http://localhost/api/backend/api/v1/history/stats", {
+      method: "POST",
+    })
+
+    await POST(request, { params: Promise.resolve({ path: ["api", "v1", "history", "stats"] }) })
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://qr-code-fastapi.onrender.com/api/v1/history/stats",
+      expect.objectContaining({ method: "POST" }),
+    )
+  })
+
   it("rejects cross-origin state-changing requests", async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
