@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import auth, dashboard, history, qr
+from app.routers import auth, dashboard, history, qr
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="QR Generator API", version="1.0.0")

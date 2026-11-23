@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 
 import dotenv
-from fastapi import File, HTTPException, UploadFile
+from fastapi import HTTPException, UploadFile
 from PIL import Image
 from typing import cast
 from supabase import Client, create_client

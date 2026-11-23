@@ -2,7 +2,7 @@ from io import BytesIO
 import qrcode
 from PIL import Image, ImageColor, ImageDraw
 
-from database.supabase_db import IMAGE_BUCKET, get_supabase_client
+from app.database.supabase_db import IMAGE_BUCKET, get_supabase_client
 
 
 def _valid_color(value: str | None, fallback: str) -> str:

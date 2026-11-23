@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from io import BytesIO
 from sqlalchemy.orm import Session
 
-from database.schema import AuthUser, QRCode
-from database.database import (
+from app.database.schema import AuthUser, QRCode
+from app.database.database import (
     get_db,
     save_qr_code,
     get_qr_code,

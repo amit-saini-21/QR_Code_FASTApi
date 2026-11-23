@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from database.schema import AuthUser
+from app.database.schema import AuthUser
 from sqlalchemy.orm import Session
-from models.model import DashboardUserResponse
-from utils.jwt import token_required
-from database.database import get_db, find_user_by_email
+from app.models.model import DashboardUserResponse
+from app.utils.jwt import token_required
+from app.database.database import get_db, find_user_by_email
 from typing import cast
 
-dashboard_router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
+dashbsoard_router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
 
 @dashboard_router.get("/dashboard", response_model=DashboardUserResponse)
 def dashboard(current_user: AuthUser = Depends(token_required), db: Session = Depends(get_db)):

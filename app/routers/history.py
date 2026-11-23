@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from database.database import get_db, get_qr_code
-from database.schema import AuthUser, QRCode
-from database.supabase_db import (
+from app.database.database import get_db, get_qr_code
+from app.database.schema import AuthUser, QRCode
+from app.database.supabase_db import (
     IMAGE_BUCKET,
     get_supabase_client,
     remove_owned_storage_objects,

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from database.database import find_user_by_id, get_db
+from app.database.database import find_user_by_id, get_db
 from sqlalchemy.orm import Session
-from database.schema import AuthUser
+from app.database.schema import AuthUser
 import jwt
 import datetime
 import os
