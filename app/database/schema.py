@@ -81,40 +81,49 @@ class QRCode(Base):
 
     user = relationship("AuthUser", back_populates="qrcodes")
 
-try:
-    Base.metadata.create_all(bind=engine)
-except OperationalError as exc:
-    if is_direct_supabase_host:
-        raise RuntimeError(
-            "Supabase direct database host is unreachable. Configure Render with "
-            "the Supabase Session/Transaction Pooler URL on port 5432 or 6543."
-        ) from exc
-    raise
-
 # Existing databases are created before these appearance columns existed.
 # Add missing columns without requiring a separate migration command.
 from sqlalchemy import inspect, text
 
-inspector = inspect(engine)
-if "qrcodes" in inspector.get_table_names():
-    existing_columns = {column["name"] for column in inspector.get_columns("qrcodes")}
-    migrations = {
-        "qr_size": "INTEGER",
-        "qr_color": "VARCHAR",
-        "background_color": "VARCHAR",
-        "corner_eye_color": "VARCHAR",
-        "qr_pattern_style": "VARCHAR",
-        "corner_eye_style": "VARCHAR",
-        "qr_logo": "VARCHAR",
-        "media_path": "VARCHAR",
-        "media_url": "VARCHAR",
-        "media_name": "VARCHAR",
-        "media_type": "VARCHAR",
-        "media_size": "INTEGER",
-    }
-    with engine.begin() as connection:
-        for column_name, column_type in migrations.items():
-            if column_name not in existing_columns:
-                connection.execute(text(
-                    f'ALTER TABLE qrcodes ADD COLUMN {column_name} {column_type}'
-                ))
+_database_initialized = False
+
+
+def initialize_database() -> None:
+    global _database_initialized
+    if _database_initialized:
+        return
+
+    try:
+        Base.metadata.create_all(bind=engine)
+        inspector = inspect(engine)
+        if "qrcodes" in inspector.get_table_names():
+            existing_columns = {column["name"] for column in inspector.get_columns("qrcodes")}
+            migrations = {
+                "qr_size": "INTEGER",
+                "qr_color": "VARCHAR",
+                "background_color": "VARCHAR",
+                "corner_eye_color": "VARCHAR",
+                "qr_pattern_style": "VARCHAR",
+                "corner_eye_style": "VARCHAR",
+                "qr_logo": "VARCHAR",
+                "media_path": "VARCHAR",
+                "media_url": "VARCHAR",
+                "media_name": "VARCHAR",
+                "media_type": "VARCHAR",
+                "media_size": "INTEGER",
+            }
+            with engine.begin() as connection:
+                for column_name, column_type in migrations.items():
+                    if column_name not in existing_columns:
+                        connection.execute(text(
+                            f'ALTER TABLE qrcodes ADD COLUMN {column_name} {column_type}'
+                        ))
+        _database_initialized = True
+    except OperationalError as exc:
+        if is_direct_supabase_host:
+            raise RuntimeError(
+                "DATABASE_URL uses Supabase's direct host, which is unreachable from "
+                "this deployment network. Use the Supabase Session/Transaction Pooler "
+                "URL on port 5432 or 6543."
+            ) from exc
+        raise

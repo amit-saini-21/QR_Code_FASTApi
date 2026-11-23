@@ -1,4 +1,4 @@
-from .schema import AuthUser,QRCode, engine
+from .schema import AuthUser, QRCode, engine, initialize_database
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 import datetime
@@ -16,6 +16,12 @@ def get_db():
     Returns:
         Session: A SQLAlchemy database session.
     """
+    try:
+        initialize_database()
+    except RuntimeError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     db = SessionLocal()
     try:
         yield db

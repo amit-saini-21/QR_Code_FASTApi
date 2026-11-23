@@ -9,7 +9,7 @@ from app.database.database import (
     get_qr_code,
     update_qr_code,
 )
-from database.supabase_db import (
+from app.database.supabase_db import (
     ALLOWED_FORMATS,
     IMAGE_BUCKET,
     get_supabase_client,
@@ -18,9 +18,9 @@ from database.supabase_db import (
     upload_logo_file,
     remove_owned_storage_objects,
 )
-from models.model import QRCodeData, QRCodeNewData
-from services.qr_generate import generate_qr_code_image
-from utils.jwt import token_required
+from app.models.model import QRCodeData, QRCodeNewData
+from app.services.qr_generate import generate_qr_code_image
+from app.utils.jwt import token_required
 
 
 qr_router = APIRouter(prefix="/api/v1/qr", tags=["QR Code"])

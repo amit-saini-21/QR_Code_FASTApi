@@ -8,7 +8,7 @@ from app.database.supabase_db import (
     get_supabase_client,
     remove_owned_storage_objects,
 )
-from utils.jwt import token_required
+from app.utils.jwt import token_required
 
 
 history_router = APIRouter(prefix="/api/v1/history", tags=["History"])

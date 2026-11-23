@@ -6,7 +6,7 @@ from app.utils.jwt import token_required
 from app.database.database import get_db, find_user_by_email
 from typing import cast
 
-dashbsoard_router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
+dashboard_router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
 
 @dashboard_router.get("/dashboard", response_model=DashboardUserResponse)
 def dashboard(current_user: AuthUser = Depends(token_required), db: Session = Depends(get_db)):
