@@ -13,6 +13,17 @@ function backendUrl(path: string, search: string) {
   return `${base}/${path}${search}`
 }
 
+function requestOrigin(request: NextRequest) {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+  const host = forwardedHost || request.headers.get("host") || request.nextUrl.host
+  const protocol = (forwardedProtocol || request.nextUrl.protocol.replace(/:$/, "")).replace(/:$/, "")
+
+  if (!host || (protocol !== "http" && protocol !== "https")) return null
+
+  return new URL(`${protocol}://${host}`).origin
+}
+
 function setAuthCookie(response: NextResponse, token: string) {
   response.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -47,7 +58,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   const origin = request.headers.get("origin")
   if (method !== "GET" && origin) {
     try {
-      if (new URL(origin).host !== request.nextUrl.host) {
+      if (new URL(origin).origin !== requestOrigin(request)) {
         return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
       }
     } catch {
