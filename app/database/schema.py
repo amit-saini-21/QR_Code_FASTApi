@@ -6,6 +6,7 @@ from pathlib import Path
 
 import dotenv
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 dotenv.load_dotenv(PROJECT_ROOT / ".env")
@@ -20,10 +21,25 @@ if DATABASE_URL.startswith("postgres://"):
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
+lower_database_url = DATABASE_URL.lower()
+is_direct_supabase_host = "db." in lower_database_url and ".supabase.co:" in lower_database_url
+if is_direct_supabase_host:
+    print(
+        "WARNING: Direct Supabase database hosts can be unreachable from IPv4-only "
+        "hosts such as Render. Use the Supabase session or transaction pooler."
+    )
+if "sslmode=" not in lower_database_url:
+    separator = "&" if "?" in DATABASE_URL else "?"
+    DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
+
 engine = create_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
+    pool_recycle=280,
+    pool_size=3,
+    max_overflow=5,
+    pool_timeout=30,
 )
 
 Base = declarative_base()
@@ -65,7 +81,15 @@ class QRCode(Base):
 
     user = relationship("AuthUser", back_populates="qrcodes")
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except OperationalError as exc:
+    if is_direct_supabase_host:
+        raise RuntimeError(
+            "Supabase direct database host is unreachable. Configure Render with "
+            "the Supabase Session/Transaction Pooler URL on port 5432 or 6543."
+        ) from exc
+    raise
 
 # Existing databases are created before these appearance columns existed.
 # Add missing columns without requiring a separate migration command.
