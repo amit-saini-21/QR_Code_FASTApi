@@ -1,8 +1,12 @@
 from io import BytesIO
+from pathlib import Path
 import qrcode
 from PIL import Image, ImageColor, ImageDraw
 
 from app.database.supabase_db import IMAGE_BUCKET, get_supabase_client
+
+
+DEFAULT_LOGO_PATH = Path(__file__).resolve().parent / "default_logo.png"
 
 
 def _valid_color(value: str | None, fallback: str) -> str:
@@ -33,15 +37,21 @@ def _draw_finder(
     eye_color: str,
     eye_style: str,
 ) -> None:
-    box = (left, top, left + 7 * module, top + 7 * module)
+    outer_left = round(left)
+    outer_top = round(top)
+    outer_right = round(left + 7 * module)
+    outer_bottom = round(top + 7 * module)
+    box = (outer_left, outer_top, outer_right, outer_bottom)
     if eye_style == "dot":
         draw.ellipse(box, fill=eye_color)
         draw.ellipse(
-            (left + module, top + module, left + 6 * module, top + 6 * module),
+            (round(left + module), round(top + module),
+             round(left + 6 * module), round(top + 6 * module)),
             fill=background,
         )
         draw.ellipse(
-            (left + 2 * module, top + 2 * module, left + 5 * module, top + 5 * module),
+            (round(left + 2 * module), round(top + 2 * module),
+             round(left + 5 * module), round(top + 5 * module)),
             fill=eye_color,
         )
     elif eye_style == "rounded":
@@ -53,7 +63,8 @@ def _draw_finder(
             fill=background,
         )
         draw.rounded_rectangle(
-            (left + 2 * module, top + 2 * module, left + 5 * module, top + 5 * module),
+            (round(left + 2 * module), round(top + 2 * module),
+             round(left + 5 * module), round(top + 5 * module)),
             radius=radius,
             fill=eye_color,
         )
@@ -99,8 +110,8 @@ def generate_qr_code_image(
 
     matrix = qr.get_matrix()
     matrix_size = len(matrix)
-    module = max(1, qr_size // (matrix_size + 8))
-    canvas_size = (matrix_size + 8) * module
+    module = qr_size / (matrix_size + 8)
+    canvas_size = qr_size
     image = Image.new("RGB", (canvas_size, canvas_size), background_color)
     draw = ImageDraw.Draw(image)
     offset = 4 * module
@@ -109,17 +120,23 @@ def generate_qr_code_image(
         for column, enabled in enumerate(modules):
             if not enabled or _is_finder_cell(row, column, matrix_size):
                 continue
-            left = offset + column * module
-            top = offset + row * module
-            box = (left, top, left + module, top + module)
+            left = round(offset + column * module)
+            top = round(offset + row * module)
+            right = round(offset + (column + 1) * module)
+            bottom = round(offset + (row + 1) * module)
+            box = (left, top, right, bottom)
             if qr_pattern_style == "dot":
-                inset = max(1, module // 5)
+                inset = max(1, round(module / 5))
                 draw.ellipse(
-                    (left + inset, top + inset, left + module - inset, top + module - inset),
+                    (left + inset, top + inset, right - inset, bottom - inset),
                     fill=qr_color,
                 )
             elif qr_pattern_style == "rounded":
-                draw.rounded_rectangle(box, radius=max(1, module // 3), fill=qr_color)
+                draw.rounded_rectangle(
+                    box,
+                    radius=max(1, round(module / 3)),
+                    fill=qr_color,
+                )
             else:
                 draw.rectangle(box, fill=qr_color)
 
@@ -138,27 +155,37 @@ def generate_qr_code_image(
             corner_eye_style,
         )
 
+    logo_loaded = False
     if logo_path:
         try:
             client = get_supabase_client()
             logo_bytes = client.storage.from_(str(IMAGE_BUCKET)).download(logo_path)
             logo = Image.open(BytesIO(logo_bytes)).convert("RGBA")
-            logo_size = max(module * 5, canvas_size // 6)
-            logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS)
-            pad = max(2, module)
-            card = Image.new(
-                "RGBA",
-                (logo.width + pad * 2, logo.height + pad * 2),
-                (*ImageColor.getrgb(background_color), 255),
-            )
-            card.paste(logo, (pad, pad), logo)
-            position = (
-                (canvas_size - card.width) // 2,
-                (canvas_size - card.height) // 2,
-            )
-            image.paste(card, position, card)
+            logo_loaded = True
         except Exception:
-            pass
+            logo_loaded = False
+    else:
+        try:
+            logo = Image.open(DEFAULT_LOGO_PATH).convert("RGBA")
+            logo_loaded = True
+        except Exception:
+            logo_loaded = False
+
+    if logo_loaded:
+        logo_size = max(round(canvas_size * 0.18), 40)
+        logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS)
+        pad = max(round(module * 1.25), 6)
+        card = Image.new(
+            "RGBA",
+            (logo.width + pad * 2, logo.height + pad * 2),
+            (*ImageColor.getrgb(background_color), 255),
+        )
+        card.paste(logo, (pad, pad), logo)
+        position = (
+            (canvas_size - card.width) // 2,
+            (canvas_size - card.height) // 2,
+        )
+        image.paste(card, position, card)
 
     if canvas_size != qr_size:
         image = image.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
