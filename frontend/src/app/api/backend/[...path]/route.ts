@@ -24,24 +24,25 @@ function requestOrigin(request: NextRequest) {
   return new URL(`${protocol}://${host}`).origin
 }
 
-function setAuthCookie(response: NextResponse, token: string) {
-  response.cookies.set(COOKIE_NAME, token, {
+function authCookieOptions(maxAge: number) {
+  const secure = process.env.NODE_ENV === "production"
+
+  return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure,
+    sameSite: secure ? ("none" as const) : ("lax" as const),
     path: "/",
-    maxAge: COOKIE_MAX_AGE,
-  })
+    maxAge,
+    ...(secure ? { partitioned: true } : {}),
+  }
+}
+
+function setAuthCookie(response: NextResponse, token: string) {
+  response.cookies.set(COOKIE_NAME, token, authCookieOptions(COOKIE_MAX_AGE))
 }
 
 function clearAuthCookie(response: NextResponse) {
-  response.cookies.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  })
+  response.cookies.set(COOKIE_NAME, "", authCookieOptions(0))
 }
 
 async function proxy(request: NextRequest, context: RouteContext) {
@@ -56,13 +57,20 @@ async function proxy(request: NextRequest, context: RouteContext) {
   }
 
   const origin = request.headers.get("origin")
-  if (method !== "GET" && origin) {
-    try {
-      if (new URL(origin).origin !== requestOrigin(request)) {
-        return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+  const fetchSite = request.headers.get("sec-fetch-site")
+  if (method !== "GET") {
+    if (fetchSite && fetchSite !== "same-origin") {
+      return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+    }
+
+    if (origin && !fetchSite) {
+      try {
+        if (new URL(origin).origin !== requestOrigin(request)) {
+          return NextResponse.json({ detail: "Cross-origin request rejected." }, { status: 403 })
+        }
+      } catch {
+        return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 })
       }
-    } catch {
-      return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 })
     }
   }
 
@@ -117,7 +125,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
       headers: responseHeaders,
     })
 
-    if (isLogout || upstream.status === 401) clearAuthCookie(response)
+    if (isLogout) clearAuthCookie(response)
     return response
   } catch {
     const response = NextResponse.json(
