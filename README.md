@@ -100,3 +100,25 @@ The FastAPI service-role key is server-only and is used for uploads and authoriz
 ## Live preview
 
 `POST /api/v1/qr/preview` generates a temporary image response. It does not save a database record or upload an image. Use it for live color, pattern, eye, size, and logo previews before calling `/generate` or `/update/{qr_id}`.
+
+## Next.js frontend
+
+The QR Studio frontend lives in `frontend/` and talks to the FastAPI backend through a same-origin Next.js proxy. The backend JWT is kept in an HttpOnly cookie and is never stored in browser storage.
+
+Start FastAPI using the instructions above, then in another terminal run:
+
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+Set `BACKEND_API_URL` in `frontend/.env.local` to the FastAPI base URL (defaults to `http://127.0.0.1:8000`). For a deployment, configure this server-only environment variable to a backend URL reachable by the Next.js server; do not use a `NEXT_PUBLIC_` variable for it. `frontend/.env.example` shows the local default.
+
+Run frontend checks from `frontend/`:
+
+```sh
+npm test
+npm run lint
+npm run build
+```
